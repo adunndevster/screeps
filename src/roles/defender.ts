@@ -1,15 +1,16 @@
-import { MovementUtils } from "utils/MovementUtils";
-
 export class Defender {
     public static run(creep: Creep): void {
-            var hostileCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
-            if (hostileCreeps.length > 0) {
-                console.log("we're under attack!")
-                const attackResult = creep.attack(hostileCreeps[0])
-                if(attackResult == ERR_NOT_IN_RANGE) {
-                        creep.moveTo(hostileCreeps[0], {visualizePathStyle: {stroke: '#ff0000'}});
-                }
-            } else
-                creep.move(MovementUtils.randomDirectionSelector())
+        const hostile = creep.pos.findClosestByPath(FIND_HOSTILE_CREEPS);
+        if (hostile) {
+            if (creep.attack(hostile) === ERR_NOT_IN_RANGE) {
+                creep.moveTo(hostile, { visualizePathStyle: { stroke: '#ff0000' } });
+            }
+        } else {
+            // Move to a defensive position or patrol
+            const defendFlag = Game.flags['DefendFlag'];
+            if (defendFlag) {
+                creep.moveTo(defendFlag, { visualizePathStyle: { stroke: '#ffffff' } });
             }
         }
+    }
+}

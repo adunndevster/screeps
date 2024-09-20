@@ -1,31 +1,34 @@
 export class Harvester {
     public static run(creep: Creep): void {
-        if(creep.memory.delivering && creep.store[RESOURCE_ENERGY] == 0) {
-            creep.memory.delivering = false;
-            creep.say('🔄 harvest');
+        // Check if creep is harvesting or needs to deposit energy
+        if (creep.memory.harvesting && creep.store.getFreeCapacity() === 0) {
+            creep.memory.harvesting = false;
+        } else if (!creep.memory.harvesting && creep.store.getUsedCapacity() === 0) {
+            creep.memory.harvesting = true;
         }
-        if(!creep.memory.delivering && creep.store.getFreeCapacity() == 0) {
-            creep.memory.delivering = true;
-            creep.say('⚡ deliver');
-        }
-        if(!creep.memory.delivering) {
-            var sources = creep.room.find(FIND_SOURCES);
-            if(creep.harvest(sources[creep.memory.targetSource ?? 0]) == ERR_NOT_IN_RANGE) {
-                creep.moveTo(sources[creep.memory.targetSource ?? 0], {visualizePathStyle: {stroke: '#ffaa00'}});
-            }
-        }
-        else {
-            var targets = creep.room.find(FIND_STRUCTURES, {
-                filter: (structure) => {
-                    return (structure.structureType == STRUCTURE_EXTENSION ||
-                        structure.structureType == STRUCTURE_SPAWN ||
-                        structure.structureType == STRUCTURE_TOWER) &&
-                        structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
+
+        if (creep.memory.harvesting) {
+            // Find the nearest source
+            const source = creep.pos.findClosestByPath(FIND_SOURCES_ACTIVE);
+            if (source) {
+                if (creep.harvest(source) === ERR_NOT_IN_RANGE) {
+                    creep.moveTo(source, { visualizePathStyle: { stroke: '#ffaa00' } });
                 }
-            });
-            if(targets.length > 0) {
-                if(creep.transfer(targets[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(targets[0], {visualizePathStyle: {stroke: '#ffffff'}});
+            }
+        } else {
+            // Transfer energy to storage or container
+            let target:any = creep.room.storage;
+            if (!target || target.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
+                target = creep.pos.findClosestByPath<StructureContainer>(FIND_STRUCTURES, {
+                    filter: (structure) =>
+                        structure.structureType === STRUCTURE_CONTAINER &&
+                        structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
+                });
+            }
+
+            if (target) {
+                if (creep.transfer(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+                    creep.moveTo(target, { visualizePathStyle: { stroke: '#ffffff' } });
                 }
             }
         }
